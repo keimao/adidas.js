@@ -4,17 +4,21 @@ const client = new Discord.Client()
 const config = require('./config.json')
 const prefix = config.prefix
 
-function sizeExtract(adi) {
-  variantobs = adi.variation_list
-  return variantobs.map((element) => {
-    return element.size
-  })
-};
 function stockExtract(adi) {
   variantobs = adi.variation_list
   return variantobs.map((element) => {
-    return element.availability
+    return `Size: ${element.size} ------- Stock: ${element.availability}`
   })
+}
+//this function extracts all stock number and put it in a nice array to extract for all the stock later
+const stockArr = (adi) => {
+  variantobs = adi.variation_list
+  return variantobs.map((element) => {
+    return parseInt(element.availability, 10);
+  })
+}
+function reducer(accumulator, sum) {
+  return accumulator + sum
 }
 
 client.on("message", (message) => {
@@ -31,24 +35,19 @@ client.on("message", (message) => {
     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:65.0) Gecko/20100101 Firefox/65.0"
     }}, function(error, response, body) {
       if (body !== `{"message":"not found"}`) {
-        let numStock = parseInt(stockExtract(body), 10);
-        console.log(numStock)
-        const reducer = (accumulator, currentValue) => accumulator + currentValue;
-        let totalStock = numStock.reduce(reducer)
-        console.log(totalStock)
         try {
           message.channel.send({embed: {
             color: 3447003,
             description: 'Made by Kei',
             title: "Adidas Stock",
             fields: [{
-                name: "Size \t Stock",
-                value: `Size: ${sizeExtract(body).join('\n')} \t Stock: ${stockExtract(body).join('\n')}`,
+                name: "Size \t \t \t  Stock",
+                value: `${stockExtract(body).join('\n')}`,
                 inline: true
               },
               {
-                name: "Stock",
-                value: `${totalStock}`,
+                name: "Total Stock",
+                value: `${stockArr(body).reduce(reducer)}`,
                 inline: true
             }
           ],
@@ -60,7 +59,7 @@ client.on("message", (message) => {
           }})
         }
         catch(error) {
-          message.channel.send('Please send a valid SKU')
+          message.channel.send('Please send a valid SKU' + error + stockArr(body))
         }
       } else {
         message.channel.send('SKU not found.')
