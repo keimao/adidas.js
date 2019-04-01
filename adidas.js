@@ -4,15 +4,18 @@ const client = new Discord.Client()
 const config = require('./config.json')
 const prefix = config.prefix
 
-function variantExtract(adi) {
+function sizeExtract(adi) {
   variantobs = adi.variation_list
   return variantobs.map((element) => {
-    return {
-      Size: element.size,
-      Stock: element.availability
-    }
+    return element.size
   })
-  }
+};
+function stockExtract(adi) {
+  variantobs = adi.variation_list
+  return variantobs.map((element) => {
+    return element.availability
+  })
+}
 
 client.on("message", (message) => {
 
@@ -27,25 +30,34 @@ client.on("message", (message) => {
     Connection: "keep-alive",
     "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:65.0) Gecko/20100101 Firefox/65.0"
     }}, function(error, response, body) {
-      if (body !== {"message":"not found"}) {
+      if (body !== `{"message":"not found"}`) {
+        let numStock = parseInt(stockExtract(body), 10);
+        console.log(numStock)
+        const reducer = (accumulator, currentValue) => accumulator + currentValue;
+        let totalStock = numStock.reduce(reducer)
+        console.log(totalStock)
         try {
-          console.log(variantExtract(body))
-          let success = (variantExtract(body));
-          let array = [];
-          const sting = () => {
-            for (i=0; i<success.length;i++) {
-              array.push(`Size: ${JSON.stringify(success[i].Size)} \n Stock:${JSON.stringify(success[i].Stock)}`)
-          } };
-          sting()
-          message.channel.send(({embed: {
+          message.channel.send({embed: {
             color: 3447003,
             description: 'Made by Kei',
+            title: "Adidas Stock",
             fields: [{
-              name: "Result",
-              value: `${JSON.stringify(array)}`,
-              inline: true
-            }]
-          }}))
+                name: "Size \t Stock",
+                value: `Size: ${sizeExtract(body).join('\n')} \t Stock: ${stockExtract(body).join('\n')}`,
+                inline: true
+              },
+              {
+                name: "Stock",
+                value: `${totalStock}`,
+                inline: true
+            }
+          ],
+          timestamp: new Date(),
+          footer: {
+            icon_url: client.user.avatarURL,
+            text: "© NeXuS rEtOR"
+          }
+          }})
         }
         catch(error) {
           message.channel.send('Please send a valid SKU')
